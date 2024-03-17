@@ -2,6 +2,7 @@ package com.ego.doan_ego.controller;
 
 import com.ego.doan_ego.request.CreateGroupRequest;
 import com.ego.doan_ego.request.UpdateGroupRequest;
+import com.ego.doan_ego.request.group.AddListUserGroupRequest;
 import com.ego.doan_ego.response.BaseResponse;
 import com.ego.doan_ego.service.interfaceService.GroupService;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,5 +25,10 @@ public class GroupController {
     @PutMapping("/update")
     public BaseResponse<?> updateGroup(UpdateGroupRequest request){
         return groupService.updateGroup(request);
+    }
+
+    @PostMapping("/add_users")
+    public BaseResponse<?> addListMemberIntoGroup(AddListUserGroupRequest request){
+        return groupService.addUsers(request);
     }
 }

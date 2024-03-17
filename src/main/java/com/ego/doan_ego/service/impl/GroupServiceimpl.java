@@ -4,20 +4,25 @@ import com.ego.doan_ego.constant.AccountTypeContants;
 import com.ego.doan_ego.constant.CommonMessage;
 import com.ego.doan_ego.entities.AccountDao;
 import com.ego.doan_ego.entities.GroupDao;
+import com.ego.doan_ego.entities.GroupUserDao;
 import com.ego.doan_ego.entities.UserDao;
 import com.ego.doan_ego.repository.AccountRepository;
 import com.ego.doan_ego.repository.GroupRepository;
+import com.ego.doan_ego.repository.GroupUserRepository;
 import com.ego.doan_ego.repository.UserRepository;
 import com.ego.doan_ego.request.CreateGroupRequest;
 import com.ego.doan_ego.request.UpdateGroupRequest;
+import com.ego.doan_ego.request.group.AddListUserGroupRequest;
 import com.ego.doan_ego.response.BaseResponse;
 import com.ego.doan_ego.service.interfaceService.GroupService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,6 +34,8 @@ public class GroupServiceimpl implements GroupService {
     AccountRepository accountRepository;
     @Autowired
     UserRepository userRepository;
+    @Autowired
+    GroupUserRepository groupUserRepository;
 
     @Override
     public BaseResponse<?> createGroup(CreateGroupRequest request) {
@@ -63,7 +70,6 @@ public class GroupServiceimpl implements GroupService {
         }
         return new BaseResponse<>(CommonMessage.FAILED, new GroupDao());
     }
-
     @Override
     public BaseResponse<?> updateGroup(UpdateGroupRequest request) {
         try{
@@ -88,4 +94,37 @@ public class GroupServiceimpl implements GroupService {
         }
         return new BaseResponse<>(CommonMessage.FAILED, "Cập nhật thông tin group");
     }
+
+    @Override
+    public BaseResponse<?> addUsers(AddListUserGroupRequest request) {
+        List<Long> listUserId = accountRepository.getListAccountIdByUsername(request.getListUserName());
+        Optional<GroupDao> groupDaoExist = groupRepository.findById(request.getGroupId());
+        GroupDao groupDao = groupDaoExist.orElse(null);
+        if(groupDao == null){
+            return new BaseResponse<>(CommonMessage.GROUP_DOES_NOT_EXIST);
+        }
+        List<GroupUserDao> groupUserDaoList = groupUserRepository.getGroupUserDaoByGroupId(request.getGroupId());
+        if(groupUserDaoList == null){
+            List<GroupUserDao> newGroupUserDaoList = new ArrayList<>();
+            listUserId.parallelStream().forEach(
+                    u -> {
+                        GroupUserDao newGroupUser = new GroupUserDao();
+                        newGroupUser.setGroupId(request.getGroupId());
+                        newGroupUser.setUserId(u);
+                        newGroupUser.setJoinDate(System.currentTimeMillis());
+                        newGroupUserDaoList.add(newGroupUser);
+                    }
+            );
+            groupUserRepository.saveAll(newGroupUserDaoList);
+            return new BaseResponse<>(CommonMessage.SUCCESS);
+        }else{
+            List<GroupUserDao> groupUser = groupUserDaoList.parallelStream()
+                    .filter(e -> !listUserId.contains(e.getUserId()))
+                    .collect(Collectors.toList());
+            groupUserRepository.saveAll(groupUser);
+            return new BaseResponse<>(CommonMessage.SUCCESS);
+        }
+    }
+
+
 }
