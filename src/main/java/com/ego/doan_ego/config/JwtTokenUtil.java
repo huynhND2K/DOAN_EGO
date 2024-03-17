@@ -52,23 +52,18 @@ public class JwtTokenUtil implements Serializable {
     }
 
     private Boolean ignoreTokenExpiration(String token) {
-        // here you specify tokens, for that the expiration is ignored
         return false;
     }
 
-    public String generateToken(UserDetails userDetails, String fullName, Long orgId, Long userId) {
+    public String generateToken(UserDetails userDetails, String fullName,  Long userId) {
         Map<String, Object> claims = new HashMap<>() {{
             put("fullName", fullName);
-            if (orgId != null) {
-                put("orgId", orgId);
-            }
             put("userId", userId);
         }};
         return doGenerateToken(claims, userDetails.getUsername());
     }
 
     private String doGenerateToken(Map<String, Object> claims, String subject) {
-
         return Jwts.builder().setClaims(claims).setSubject(subject).setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpired*1000)).signWith(SignatureAlgorithm.HS512, secret).compact();
     }
